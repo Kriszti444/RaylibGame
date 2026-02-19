@@ -8,7 +8,9 @@ namespace bl.cs;
 enum GameState {
     Menu,
     Info,
-    Game,
+    Gamelvl1,
+    Gamelvl2,
+    Gamelvl3,
     End
 }
 
@@ -45,9 +47,19 @@ class Program
         Vector2 playerpos = new Vector2(100, 200);
         float speed = 0.05f;
 
-        Rectangle itemRect = new Rectangle(800, 450, 50, 50);
-        bool itemPicked = false;
-        bool hasItem = false;
+        Rectangle itemRect1 = new Rectangle(500, 500, 50, 50);
+        bool itemPicked1 = false;
+        bool hasItem1 = false;
+
+        Rectangle itemRect2 = new Rectangle(600, 700, 50, 50);
+        bool itemPicked2 = false;
+        bool hasItem2 = false;
+
+        Rectangle itemRect3 = new Rectangle(900, 200, 50, 50);
+        bool itemPicked3 = false;
+        bool hasItem3 = false;
+
+        bool haseverything = false;
 
         GameState CurrentState = GameState.Menu;
         while (!Raylib.WindowShouldClose())
@@ -69,7 +81,7 @@ class Program
 
                 if (mouseOnPlay && IsMouseButtonPressed(MouseButton.Left))
                 {
-                    CurrentState = GameState.Game;
+                    CurrentState = GameState.Gamelvl1;
                 }
                 if (mouseOnInfo && IsMouseButtonPressed(MouseButton.Left))
                 {
@@ -89,8 +101,9 @@ class Program
                 }
             }
 
-            else if (CurrentState == GameState.Game)
+            else if (CurrentState == GameState.Gamelvl1)
             {
+                DrawText("lvl 1", 960, 200, 200, Color.Black);
 
                 // karakter mozgasa
 
@@ -136,13 +149,132 @@ class Program
                 // dolgokkal valo interaktálás
 
                 Rectangle playerRec = new Rectangle(playerpos.X, playerpos.Y, medium_cat.Width, medium_cat.Height);
-                Rectangle interactZone = new Rectangle(playerRec.X - 12, playerRec.Y, medium_cat.Width, medium_cat.Height);
+                Rectangle interactZone = new Rectangle(playerRec.X - 12, playerRec.Y -12, medium_cat.Width +24, medium_cat.Height+24);
                     
-                if (!itemPicked)
+                if (!itemPicked1)
                 {
-                    DrawRectangle();
+                    DrawRectangle(500, 500, 50, 50, Color.Red);
                 }
 
+                bool nearItem = !itemPicked1 && CheckCollisionRecs(interactZone, itemRect1);
+
+                if (nearItem)
+                {
+                    DrawText("Press E", 50, 60, 30, Color.Black);
+
+                    if (IsKeyPressed(KeyboardKey.E))
+                    {
+                        itemPicked1 = true;
+                        hasItem1 = true;
+                    }
+                }
+
+                if (hasItem2)
+                {
+                    DrawText("You picked up the item!", 70, 70, 20, Color.Black);
+                }
+
+                //                    
+                if (!itemPicked2)
+                {
+                    DrawRectangle(600, 700, 50, 50, Color.Red);
+                }
+
+                bool nearItem2 = !itemPicked2 && CheckCollisionRecs(interactZone, itemRect2);
+
+                if (nearItem2)
+                {
+                    DrawText("Press E", 50, 60, 30, Color.Black);
+
+                    if (IsKeyPressed(KeyboardKey.E))
+                    {
+                        itemPicked2 = true;
+                        hasItem2 = true;
+                    }
+                }
+
+                if (hasItem2)
+                {
+                    DrawText("You picked up the item1!", 70, 90, 20, Color.Black);
+                }
+
+                //                   
+                if (!itemPicked3)
+                {
+                    DrawRectangle(900, 200, 50, 50, Color.Red);
+                }
+
+                bool nearItem3 = !itemPicked3 && CheckCollisionRecs(interactZone, itemRect3);
+
+                if (nearItem3)
+                {
+                    DrawText("Press E", 50, 60, 30, Color.Black);
+
+                    if (IsKeyPressed(KeyboardKey.E))
+                    {
+                        itemPicked3 = true;
+                        hasItem3 = true;
+                    }
+                }
+
+                if (hasItem3)
+                {
+                    DrawText("You picked up the item!", 70, 110, 20, Color.Black);
+                }
+
+                if (hasItem1 && hasItem2 && hasItem3)
+                {
+                    haseverything = true;
+
+                    // a "haseverything arra kell, hogy ha majd meg lesz a palya, csak akkor tudjon a következore menni a jatekor,
+                    // ha meg van minen olyan targy amit fel kellett vennie."
+                    CurrentState = GameState.Gamelvl2;
+                }
+
+            } else if (CurrentState == GameState.Gamelvl2)
+            {
+                DrawText("lvl 2", 960, 200, 200, Color.Black);
+
+                // karakter mozgasa
+
+                if (IsKeyDown(KeyboardKey.W))
+                {
+                    playerpos.Y -= speed;
+                    walking = true;
+                } 
+                if (IsKeyDown(KeyboardKey.A)) {
+                    playerpos.X -= speed;
+                    walking = true;
+                }
+                if (IsKeyDown(KeyboardKey.S)) {
+                    playerpos.Y += speed;
+                    walking = true;
+                }
+                if (IsKeyDown(KeyboardKey.D)) {
+                    playerpos.X += speed;
+                    walking = true;
+                }
+                
+
+                if (walking)
+                {
+                    if (IsKeyDown(KeyboardKey.W))
+                    {
+                        DrawTexture(medium_cat_back, (int)playerpos.X, (int)playerpos.Y, Color.White);
+                    } 
+                    else if (IsKeyDown(KeyboardKey.A)) {
+                        DrawTexture(medium_cat_left, (int)playerpos.X, (int)playerpos.Y, Color.White);
+                    }
+                    else if (IsKeyDown(KeyboardKey.S)) {
+                        DrawTexture(medium_cat, (int)playerpos.X, (int)playerpos.Y, Color.White);
+                    }
+                    else if (IsKeyDown(KeyboardKey.D)) {
+                        DrawTexture(medium_cat_right, (int)playerpos.X, (int)playerpos.Y, Color.White);
+                    } 
+                } else {
+                    DrawTexture(medium_cat, (int)playerpos.X, (int)playerpos.Y, Color.White);
+                }
+                    
             }
 
             Raylib.EndDrawing();
