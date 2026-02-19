@@ -1,0 +1,14 @@
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs.deps.json
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs.runtimeconfig.json
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs.dll
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs.pdb
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.GeneratedMSBuildEditorConfig.editorconfig
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.AssemblyInfoInputs.cache
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.AssemblyInfo.cs
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.csproj.CoreCompileInputs.cache
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.dll
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/refint/bl.cs.dll
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.pdb
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.genruntimeconfig.cache
+/home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/ref/bl.cs.dll
