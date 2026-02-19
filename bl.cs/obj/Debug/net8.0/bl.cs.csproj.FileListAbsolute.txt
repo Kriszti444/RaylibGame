@@ -21,3 +21,26 @@
 /home/kriszti/Desktop/Code/C#/First Test/bl.cs/bin/Debug/net8.0/runtimes/win-x86/native/raylib.dll
 /home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.csproj.AssemblyReference.cache
 /home/kriszti/Desktop/Code/C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.csproj.CopyComplete
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs.deps.json
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs.runtimeconfig.json
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs.dll
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/bl.cs.pdb
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/Raylib-cs.dll
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/runtimes/linux-x64/native/libraylib.so
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/runtimes/osx-arm64/native/libraylib.dylib
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/runtimes/osx-x64/native/libraylib.dylib
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/runtimes/win-x64/native/raylib.dll
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/bin/Debug/net8.0/runtimes/win-x86/native/raylib.dll
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.csproj.AssemblyReference.cache
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.GeneratedMSBuildEditorConfig.editorconfig
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.AssemblyInfoInputs.cache
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.AssemblyInfo.cs
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.csproj.CoreCompileInputs.cache
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.sourcelink.json
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.csproj.CopyComplete
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.dll
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/refint/bl.cs.dll
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.pdb
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/bl.cs.genruntimeconfig.cache
+/home/kriszti/Desktop/𝑪𝒐𝒅𝒆 𝒑𝒓𝒐𝒋𝒆𝒄𝒕𝒔 ‎ᶻ 𝗓 𐰁 /C#/First Test/bl.cs/obj/Debug/net8.0/ref/bl.cs.dll
