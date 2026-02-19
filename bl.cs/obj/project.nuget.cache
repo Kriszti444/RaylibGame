@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "9p0tncpLtnRQ/YthSVRp+BWKeHsXq6o6UJeZhANrMstCL1Nqv79VkvmXnLPtLVWXEQtWGc2iVKjbgxolT17+FA==",
+  "dgSpecHash": "smvTlNZrU52sTKOoEuSfFghpESe85IcdWIaDnezDNqsh87v+cpPoaMq2tieiEOuDxmRZcx4UR4QhRCpA4syBRA==",
   "success": true,
   "projectFilePath": "/home/kriszti/Desktop/Code/C#/First Test/bl.cs/bl.cs.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "/home/kriszti/.nuget/packages/raylib-cs/7.0.2/raylib-cs.7.0.2.nupkg.sha512"
+  ],
   "logs": []
 }
