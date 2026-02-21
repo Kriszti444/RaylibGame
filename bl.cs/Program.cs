@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Raylib_cs;
 using static Raylib_cs.Raylib;
 
-
 namespace bl.cs;
 
 enum GameState {
@@ -34,6 +33,46 @@ class Program
         return btn;
     }
 
+    static void walk(ref float x,ref float y, float speed, bool walking, Texture2D back, Texture2D left, Texture2D right, Texture2D facing)
+    {
+        if (IsKeyDown(KeyboardKey.W))
+                {
+                    y -= speed;
+                    walking = true;
+                } 
+                if (IsKeyDown(KeyboardKey.A)) {
+                    x -= speed;
+                    walking = true;
+                }
+                if (IsKeyDown(KeyboardKey.S)) {
+                    y += speed;
+                    walking = true;
+                }
+                if (IsKeyDown(KeyboardKey.D)) {
+                    x += speed;
+                    walking = true;
+                }
+
+                if (walking)
+                {
+                    if (IsKeyDown(KeyboardKey.W))
+                    {
+                        DrawTexture(back, (int)x, (int)y, Color.White);
+                    } 
+                    else if (IsKeyDown(KeyboardKey.A)) {
+                        DrawTexture(left, (int)x, (int)y, Color.White);
+                    }
+                    else if (IsKeyDown(KeyboardKey.S)) {
+                        DrawTexture(facing, (int)x, (int)y, Color.White);
+                    }
+                    else if (IsKeyDown(KeyboardKey.D)) {
+                        DrawTexture(right, (int)x, (int)y, Color.White);
+                    } 
+                } else {
+                    DrawTexture(facing, (int)x, (int)y, Color.White);
+                }
+    }
+
     static void Main(string[] args)
     {
         Raylib.InitWindow(1920, 1080, "Raylib Inside Existing Project");
@@ -44,9 +83,11 @@ class Program
         Texture2D medium_cat_right = LoadTexture("kinezetek_and_stuff/medium_cat_right.png");
         Texture2D medium_cat_back = LoadTexture("kinezetek_and_stuff/medium_cat_back.png");
 
+        Texture2D lvl1Background = LoadTexture("kinezetek_and_stuff/padlas.png");
+
         // karakter pozicioja es sebessege
         Vector2 playerpos = new Vector2(100, 200);
-        float speed = 0.05f;
+        float speed = 0.1f;
 
         // items
         List<int> picked = new List<int>();
@@ -131,48 +172,11 @@ class Program
 
             else if (CurrentState == GameState.Gamelvl1)
             {
-                DrawText("lvl 1", 960, 200, 200, Color.Black);
+                DrawTexture(lvl1Background, 0, 0, Color.White);
 
                 // karakter mozgasa
 
-                if (IsKeyDown(KeyboardKey.W))
-                {
-                    playerpos.Y -= speed;
-                    walking = true;
-                } 
-                if (IsKeyDown(KeyboardKey.A)) {
-                    playerpos.X -= speed;
-                    walking = true;
-                }
-                if (IsKeyDown(KeyboardKey.S)) {
-                    playerpos.Y += speed;
-                    walking = true;
-                }
-                if (IsKeyDown(KeyboardKey.D)) {
-                    playerpos.X += speed;
-                    walking = true;
-                }
-                
-
-                if (walking)
-                {
-                    if (IsKeyDown(KeyboardKey.W))
-                    {
-                        DrawTexture(medium_cat_back, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                    } 
-                    else if (IsKeyDown(KeyboardKey.A)) {
-                        DrawTexture(medium_cat_left, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                    }
-                    else if (IsKeyDown(KeyboardKey.S)) {
-                        DrawTexture(medium_cat, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                    }
-                    else if (IsKeyDown(KeyboardKey.D)) {
-                        DrawTexture(medium_cat_right, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                    } 
-                } else {
-                    DrawTexture(medium_cat, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                }
-                    
+                walk(ref playerpos.X,ref playerpos.Y, speed, walking, medium_cat_back, medium_cat_left, medium_cat_right, medium_cat);
 
                 // dolgokkal valo interaktálás
 
@@ -188,6 +192,7 @@ class Program
 
                 if (nearItem)
                 {
+                    ClearBackground(Color.White);
                     DrawText("Press E", 50, 60, 30, Color.Black);
 
                     if (IsKeyPressed(KeyboardKey.E))
@@ -310,43 +315,7 @@ class Program
 
                 // karakter mozgasa
 
-                if (IsKeyDown(KeyboardKey.W))
-                {
-                    playerpos.Y -= speed;
-                    walking = true;
-                } 
-                if (IsKeyDown(KeyboardKey.A)) {
-                    playerpos.X -= speed;
-                    walking = true;
-                }
-                if (IsKeyDown(KeyboardKey.S)) {
-                    playerpos.Y += speed;
-                    walking = true;
-                }
-                if (IsKeyDown(KeyboardKey.D)) {
-                    playerpos.X += speed;
-                    walking = true;
-                }
-                
-
-                if (walking)
-                {
-                    if (IsKeyDown(KeyboardKey.W))
-                    {
-                        DrawTexture(medium_cat_back, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                    } 
-                    else if (IsKeyDown(KeyboardKey.A)) {
-                        DrawTexture(medium_cat_left, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                    }
-                    else if (IsKeyDown(KeyboardKey.S)) {
-                        DrawTexture(medium_cat, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                    }
-                    else if (IsKeyDown(KeyboardKey.D)) {
-                        DrawTexture(medium_cat_right, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                    } 
-                } else {
-                    DrawTexture(medium_cat, (int)playerpos.X, (int)playerpos.Y, Color.White);
-                }
+                walk(ref playerpos.X,ref playerpos.Y, speed, walking, medium_cat_back, medium_cat_left, medium_cat_right, medium_cat);
 
                 // shoot
                 if (Raylib.IsMouseButtonPressed(MouseButton.Left))
