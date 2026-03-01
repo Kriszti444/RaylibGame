@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("bl.cs")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+893d4488b277938a6b33f708081b1c1413105cfe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e50682f6f2831488f1f63274f464a74e25ec0c04")]
 [assembly: System.Reflection.AssemblyProductAttribute("bl.cs")]
 [assembly: System.Reflection.AssemblyTitleAttribute("bl.cs")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

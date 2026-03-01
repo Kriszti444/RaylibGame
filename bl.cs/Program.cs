@@ -1,568 +1,643 @@
-﻿using System.Numerics;
-using System.Collections.Generic;
+﻿using System;
+using System.Numerics;
 using Raylib_cs;
-using static Raylib_cs.Raylib;
 
-namespace bl.cs;
+enum GameState
+{
+    Menu = 0,
+    Play,
+    GameOver,
+    Win
+}
 
-enum GameState {
-    Menu,
-    Info,
-    Gamelvl1,
-    Gamelvl2,
-    Gamelvl3,
-    End
+struct Player
+{
+    public Vector2 Pos;
+    public Vector2 Size;
+    public float Speed;
+    public int Lives;
+    public int Score;
+    public bool Active;
+    public Color Color;
+}
+
+struct Enemy
+{
+    public Vector2 Pos;
+    public Vector2 Vel;
+    public float Radius;
+    public bool Active;
+}
+
+struct Coin
+{
+    public Vector2 Pos;
+    public float Radius;
+    public bool Active;
 }
 
 class Program
 {
-    static Rectangle btnLetrehozas(int x, int y, int w, int h, string szoveg)
+    static float Clamp(float v, float a, float b)
     {
-        Rectangle btn = new Rectangle(x, y, w, h);
-
-        int fontsize = h / 2;
-        int textwidth = MeasureText(szoveg, fontsize);
-
-        int textX = (int)(btn.X + btn.Width / 2 - textwidth / 2);
-        int textY = (int)(btn.Y + btn.Height / 2 - fontsize / 2);
-
-        DrawRectangleRec(btn, Color.Gray);
-        DrawText(szoveg, textX, textY, fontsize, Color.White);
-
-        return btn;
+        if (v < a) return a;
+        if (v > b) return b;
+        return v;
     }
 
-    static void walk(ref float x, ref float y, float speed, bool walking, Texture2D back, Texture2D left, Texture2D right, Texture2D facing)
+    static float Dist(Vector2 a, Vector2 b)
     {
-        if (IsKeyDown(KeyboardKey.LeftShift))
-        {
-            speed += 0.06f;
-        }
-        if (IsKeyDown(KeyboardKey.W))
-        {
-            y -= speed;
-            walking = true;
-        }
-        if (IsKeyDown(KeyboardKey.A))
-        {
-            x -= speed;
-            walking = true;
-        }
-        if (IsKeyDown(KeyboardKey.S))
-        {
-            y += speed;
-            walking = true;
-        }
-        if (IsKeyDown(KeyboardKey.D))
-        {
-            x += speed;
-            walking = true;
-        }
+        float dx = a.X - b.X;
+        float dy = a.Y - b.Y;
+        return MathF.Sqrt(dx * dx + dy * dy);
+    }
 
-        if (walking)
+    static Rectangle PlayerRect(in Player p)
+    {
+        return new Rectangle(p.Pos.X, p.Pos.Y, p.Size.X, p.Size.Y);
+    }
+
+    static Vector2 RandPos(Random rng, int w, int h, int margin)
+    {
+        return new Vector2(rng.Next(margin, w - margin), rng.Next(margin, h - margin));
+    }
+
+    static Vector2 RandVel(Random rng, float minSpeed, float maxSpeed)
+    {
+        float sx = (float)(rng.NextDouble() * 2.0 - 1.0);
+        float sy = (float)(rng.NextDouble() * 2.0 - 1.0);
+        Vector2 d = new Vector2(sx, sy);
+        if (d.LengthSquared() < 0.0001f) d = new Vector2(1, 0);
+        d = Vector2.Normalize(d);
+        float sp = minSpeed + (float)rng.NextDouble() * (maxSpeed - minSpeed);
+        return d * sp;
+    }
+
+    static Rectangle SrcRectFromId(int id, int tileSize, int tilesPerRow)
+    {
+        int sx = (id % tilesPerRow) * tileSize;
+        int sy = (id / tilesPerRow) * tileSize;
+        return new Rectangle(sx, sy, tileSize, tileSize);
+    }
+
+    static void DrawTileBackground(Texture2D tileset, int[,] map, int tileSize)
+    {
+        int tilesPerRow = tileset.Width / tileSize;
+        int mapH = map.GetLength(0);
+        int mapW = map.GetLength(1);
+
+        for (int y = 0; y < mapH; y++)
         {
-            if (IsKeyDown(KeyboardKey.W))
+            for (int x = 0; x < mapW; x++)
             {
-                DrawTexture(back, (int)x, (int)y, Color.White);
+                int id = map[y, x];
+                if (id < 0) continue;
+
+                Rectangle src = SrcRectFromId(id, tileSize, tilesPerRow);
+                Rectangle dst = new Rectangle(x * tileSize, y * tileSize, tileSize, tileSize);
+                Raylib.DrawTexturePro(tileset, src, dst, Vector2.Zero, 0f, Color.White);
             }
-            else if (IsKeyDown(KeyboardKey.A))
-            {
-                DrawTexture(left, (int)x, (int)y, Color.White);
-            }
-            else if (IsKeyDown(KeyboardKey.S))
-            {
-                DrawTexture(facing, (int)x, (int)y, Color.White);
-            }
-            else if (IsKeyDown(KeyboardKey.D))
-            {
-                DrawTexture(right, (int)x, (int)y, Color.White);
-            }
-        }
-        else
-        {
-            DrawTexture(facing, (int)x, (int)y, Color.White);
         }
     }
 
-    static void itemLetrehozas(string itemname, ref bool hasitem, ref bool itempicked, Rectangle interactZone, Rectangle itemrect, ref float messageTime,
-        float messageSeconds)
+    static void Main()
     {
-        if (!itempicked) {
-            DrawRectangleRec(itemrect, Color.Red);
+        const int screenW = 1000;
+        const int screenH = 650;
+
+        Raylib.InitWindow(screenW, screenH, "batyu játék");
+        Raylib.SetTargetFPS(60);
+
+        Random rng = new Random();
+
+        GameState state = GameState.Menu;
+
+        bool twoPlayers = false;
+
+        int level = 1;
+        int coinsToWin = 10;
+        int maxLevel = 5;
+
+        float playTime = 0f;
+
+        Player p1 = new Player
+        {
+            Pos = new Vector2(120, 120),
+            Size = new Vector2(34, 34),
+            Speed = 240f,
+            Lives = 3,
+            Score = 0,
+            Active = true,
+            Color = Color.SkyBlue
+        };
+
+        Player p2 = new Player
+        {
+            Pos = new Vector2(820, 480),
+            Size = new Vector2(34, 34),
+            Speed = 240f,
+            Lives = 3,
+            Score = 0,
+            Active = false,
+            Color = Color.Orange
+        };
+
+        const int ENEMY_MAX = 32;
+        const int COIN_MAX = 40;
+
+        Enemy[] enemies = new Enemy[ENEMY_MAX];
+        Coin[] coins = new Coin[COIN_MAX];
+
+        int enemyCount = 0;
+        int coinCount = 0;
+
+        float hitCooldown1 = 0f;
+        float hitCooldown2 = 0f;
+
+        void ResetPlayers()
+        {
+            p1.Pos = new Vector2(120, 120);
+            p1.Lives = 3;
+            p1.Score = 0;
+            p1.Active = true;
+
+            p2.Pos = new Vector2(820, 480);
+            p2.Lives = 3;
+            p2.Score = 0;
+            p2.Active = twoPlayers;
+
+            hitCooldown1 = 0f;
+            hitCooldown2 = 0f;
         }
 
-        bool nearItem2 = !itempicked && CheckCollisionRecs(interactZone, itemrect);
-
-        if (nearItem2)
+        void ClearWorld()
         {
-            DrawText("Press E", (int)itemrect.X, (int)itemrect.Y - 20, 30, Color.White);
-            if (IsKeyPressed(KeyboardKey.E))
+            for (int i = 0; i < ENEMY_MAX; i++) enemies[i].Active = false;
+            for (int i = 0; i < COIN_MAX; i++) coins[i].Active = false;
+            enemyCount = 0;
+            coinCount = 0;
+        }
+
+        void SpawnLevel(int lvl)
+        {
+            ClearWorld();
+
+            int baseEnemies = 2 + (lvl - 1);
+            int extra = twoPlayers ? 1 : 0;
+            enemyCount = Math.Clamp(baseEnemies + extra, 2, ENEMY_MAX);
+
+            coinCount = Math.Clamp(8 + lvl * 2, 8, COIN_MAX);
+
+            float enemyMinSp = 110f + (lvl - 1) * 25f;
+            float enemyMaxSp = 170f + (lvl - 1) * 35f;
+
+            for (int i = 0; i < enemyCount; i++)
             {
-                itempicked = true;
-                hasitem = true;
-                messageTime = messageSeconds;
+                enemies[i].Active = true;
+                enemies[i].Radius = 16f;
+                enemies[i].Pos = RandPos(rng, screenW, screenH, 70);
+                enemies[i].Vel = RandVel(rng, enemyMinSp, enemyMaxSp);
+            }
+
+            for (int i = 0; i < coinCount; i++)
+            {
+                coins[i].Active = true;
+                coins[i].Radius = 10f;
+                coins[i].Pos = RandPos(rng, screenW, screenH, 60);
             }
         }
 
-        float dt = GetFrameTime();
+        void StartNewGame()
+        {
+            level = 1;
+            coinsToWin = 10;
+            playTime = 0f;
+            ResetPlayers();
+            SpawnLevel(level);
+            state = GameState.Play;
+        }
 
-        if (messageTime > 0f)
-                {
-                    messageTime -= dt;
-                }
+        void NextLevel()
+        {
+            level++;
+            coinsToWin += 6;
+            SpawnLevel(level);
+        }
 
-                if (messageTime > 0f)
-                {
-                    if (hasitem) DrawText($"You picked up item {itemname}!", (int)itemrect.X, (int)itemrect.Y - 30, 20, Color.White);
-                }
-    }
+        Texture2D chickSheet = Raylib.LoadTexture("kinezetek_and_stuff/Chick_animation_without_shadow.png");
+        Texture2D foxSheet = Raylib.LoadTexture("kinezetek_and_stuff/Fox_walk.png");
 
-    static void Main(string[] args)
-    {
-        Raylib.InitWindow(1920, 1080, "Raylib Inside Existing Project");
+        Texture2D tileset = Raylib.LoadTexture("kinezetek_and_stuff/Tiles/FieldsTileset.png");
+        int tileSize = 32;
 
-        // kinezetek
-        Texture2D medium_cat = LoadTexture("kinezetek_and_stuff/medium_cat.png");
-        Texture2D medium_cat_left = LoadTexture("kinezetek_and_stuff/medium_cat_left.png");
-        Texture2D medium_cat_right = LoadTexture("kinezetek_and_stuff/medium_cat_right.png");
-        Texture2D medium_cat_back = LoadTexture("kinezetek_and_stuff/medium_cat_back.png");
+        int mapW = (screenW + tileSize - 1) / tileSize;
+        int mapH = (screenH + tileSize - 1) / tileSize;
+        int[,] map = new int[mapH, mapW];
 
-        Texture2D lvl1Background = LoadTexture("kinezetek_and_stuff/padlas.png");
+        for (int y = 0; y < mapH; y++)
+        {
+            for (int x = 0; x < mapW; x++)
+            {
+                map[y, x] = 0;
+            }
+        }
 
-        Texture2D drawerImg = LoadTexture("kinezetek_and_stuff/small_cat.png");
+        for (int y = 0; y < mapH; y++)
+        {
+            for (int x = 0; x < mapW; x++)
+            {
+                if ((x + y) % 9 == 0) map[y, x] = 1;
+                if ((x + y) % 13 == 0) map[y, x] = 2;
+            }
+        }
 
-        // karakter pozicioja es sebessege
-        Vector2 playerpos = new Vector2(1200, 170);
+        int foxFrameW = 32;
+        int foxFrameH = 32;
+        int foxFramesPerRow = 6;
 
-        // IMPORTANT: speed should be pixels/second (not 0.1f)
-        float speed = 250f;
+        int foxFrame = 0;
+        float foxTimer = 0f;
+        float foxFrameSpeed = 0.10f;
 
-        // items
-        List<int> picked = new List<int>();
+        float foxScale = 2.2f;
+        int foxWalkRow = 2;
 
-        Rectangle itemRect1 = new Rectangle(500, 500, 50, 50);
-        bool itemPicked1 = false;
-        bool hasItem1 = false;
+        int chickFrameW = 16;
+        int chickFrameH = 16;
+        int chickFramesPerRow = 6;
+        int chickWalkRow = 2;
 
-        Rectangle itemRect2 = new Rectangle(600, 700, 50, 50);
-        bool itemPicked2 = false;
-        bool hasItem2 = false;
+        int chickFrame = 0;
+        float chickTimer = 0f;
+        float chickFrameSpeed = 0.12f;
 
-        Rectangle itemRect3 = new Rectangle(900, 200, 50, 50);
-        bool itemPicked3 = false;
-        bool hasItem3 = false;
-
-        bool haseverything = false;
-
-        bool drawerShow = false;
-        bool drawerImgShow = false;
-
-        // shoot
-        List<Vector2> bulletPositions = new List<Vector2>();
-        List<Vector2> bulletVelocities = new List<Vector2>();
-        List<float> bulletRemaining = new List<float>();
-
-        float bulletSpeed = 900f;
-
-        // enemies
-        List<Vector2> enemyPositions = new List<Vector2>();
-        List<float> enemyRadii = new List<float>();
-        List<int> enemyHP = new List<int>();
-
-        enemyPositions.Add(new Vector2(1200, 300));
-        enemyRadii.Add(18f);
-        enemyHP.Add(2);
-
-        enemyPositions.Add(new Vector2(1600, 800));
-        enemyRadii.Add(22f);
-        enemyHP.Add(3);
-
-        enemyPositions.Add(new Vector2(800, 900));
-        enemyRadii.Add(16f);
-        enemyHP.Add(1);
-
-        // message time
-        float messageTime = 0f;
-
-        // menu
-        bool pauseMenuOpen = false;
-
-        GameState CurrentState = GameState.Menu;
+        bool chickFlip1 = false;
+        bool chickFlip2 = false;
+        float chickScale = 3.0f;
 
         while (!Raylib.WindowShouldClose())
         {
-            Vector2 mouse = GetMousePosition();
-            bool walking = false;
+            float dt = Raylib.GetFrameTime();
 
-            Raylib.BeginDrawing();
-            Raylib.ClearBackground(Color.RayWhite);
-
-            if (CurrentState == GameState.Menu)
+            if (state == GameState.Menu)
             {
-                Rectangle btnPlay = btnLetrehozas(50, 740, 550, 150, "Play");
-                Rectangle btnInfo = btnLetrehozas(50, 920, 550, 150, "Info");
-
-                bool mouseOnPlay = CheckCollisionPointRec(mouse, btnPlay);
-                bool mouseOnInfo = CheckCollisionPointRec(mouse, btnInfo);
-
-                if (mouseOnPlay && IsMouseButtonPressed(MouseButton.Left))
+                if (Raylib.IsKeyPressed(KeyboardKey.One))
                 {
-                    CurrentState = GameState.Gamelvl1;
+                    twoPlayers = false;
+                    p2.Active = false;
+                    StartNewGame();
                 }
-                if (mouseOnInfo && IsMouseButtonPressed(MouseButton.Left))
+                if (Raylib.IsKeyPressed(KeyboardKey.Two))
                 {
-                    CurrentState = GameState.Info;
+                    twoPlayers = true;
+                    p2.Active = true;
+                    StartNewGame();
                 }
             }
-            else if (CurrentState == GameState.Info)
+            else if (state == GameState.Play)
             {
-                Rectangle btnBack = btnLetrehozas(1500, 980, 400, 80, "Back");
+                playTime += dt;
 
-                bool mouseOnBack = CheckCollisionPointRec(mouse, btnBack);
+                Vector2 move1 = Vector2.Zero;
+                if (Raylib.IsKeyDown(KeyboardKey.W)) move1.Y -= 1;
+                if (Raylib.IsKeyDown(KeyboardKey.S)) move1.Y += 1;
+                if (Raylib.IsKeyDown(KeyboardKey.A)) move1.X -= 1;
+                if (Raylib.IsKeyDown(KeyboardKey.D)) move1.X += 1;
+                if (move1.LengthSquared() > 0) move1 = Vector2.Normalize(move1);
+                p1.Pos += move1 * p1.Speed * dt;
 
-                if (mouseOnBack && IsMouseButtonDown(MouseButton.Left))
+                p1.Size = new Vector2(chickFrameW * chickScale, chickFrameH * chickScale);
+                p2.Size = new Vector2(chickFrameW * chickScale, chickFrameH * chickScale);
+
+                p1.Pos.X = Clamp(p1.Pos.X, 0, screenW - p1.Size.X);
+                p1.Pos.Y = Clamp(p1.Pos.Y, 0, screenH - p1.Size.Y);
+
+                bool p1Walking = move1.LengthSquared() > 0.0001f;
+
+                if (move1.X < 0) chickFlip1 = false;
+                else if (move1.X > 0) chickFlip1 = true;
+
+                if (p1Walking)
                 {
-                    CurrentState = GameState.Menu;
-                }
-            }
-            else if (CurrentState == GameState.Gamelvl1)
-            {
-                if (IsKeyPressed(KeyboardKey.Q))
-                {
-                    pauseMenuOpen = !pauseMenuOpen;
-                }
-
-                Rectangle pauseButton = btnLetrehozas(14, 12, 70, 61, "Menu");
-
-                //Rectangle pauseButton = new Rectangle(20, 20, 120, 50);
-                //DrawRectangleRec(pauseButton, Color.DarkGray);
-                //DrawText("Menu", 35, 32, 25, Color.White);
-
-                if (CheckCollisionPointRec(mouse, pauseButton) && IsMouseButtonPressed(MouseButton.Left))
-                    pauseMenuOpen = true;
-
-                if (!pauseMenuOpen)
-                {
-                DrawTexture(lvl1Background, 0, 0, Color.White); 
-
-                float dt = Raylib.GetFrameTime();
-
-                // --- map szelei ---
-                Rectangle roomBounds = new Rectangle(100, 103, 1714, 868);
-
-                // --- dolgok ---
-                List<Rectangle> dolgok = new List<Rectangle>()
-                {
-                    new Rectangle(1342, 125, 182, 96),  // kis dobozs
-                    new Rectangle(1536, 123, 264, 158),  // nagy doboz
-                    new Rectangle(100, 103, 360, 400),  // lepcso
-                    new Rectangle(460, 125, 336, 138),  // szekreny a lepcso mellett
-                    new Rectangle(1433, 842, 370, 105),  // szonyeg
-                    new Rectangle(872, 814, 416, 132),  // szonyeg
-                };                
-
-                // --- hitbox  ---
-                float feetOffsetX = 18f;
-                float feetOffsetY = 42f;
-                float feetW = medium_cat.Width - 36f;
-                float feetH = medium_cat.Height - 44f;
-
-                Rectangle playerRec = new Rectangle(
-                    playerpos.X + feetOffsetX,
-                    playerpos.Y + feetOffsetY,
-                    feetW,
-                    feetH
-                );
-
-                float moveX = 0, moveY = 0;
-                if (IsKeyDown(KeyboardKey.A)) moveX -= 1;
-                if (IsKeyDown(KeyboardKey.D)) moveX += 1;
-                if (IsKeyDown(KeyboardKey.W)) moveY -= 1;
-                if (IsKeyDown(KeyboardKey.S)) moveY += 1;
-
-                float actualSpeed = speed;
-                if (IsKeyDown(KeyboardKey.LeftShift)) actualSpeed *= 1.6f;
-
-                if (moveX != 0 && moveY != 0)
-                {
-                    float inv = 1.0f / MathF.Sqrt(2);
-                    moveX *= inv;
-                    moveY *= inv;
-                }
-
-                float dx = moveX * actualSpeed * dt;
-                float dy = moveY * actualSpeed * dt;
-
-                Rectangle p = playerRec;
-
-                p.X += dx;
-                foreach (var s in dolgok)
-                {
-                    if (CheckCollisionRecs(p, s))
+                    chickTimer += dt;
+                    if (chickTimer >= chickFrameSpeed)
                     {
-                        if (dx > 0) p.X = s.X - p.Width;
-                        else if (dx < 0) p.X = s.X + s.Width;
+                        chickTimer = 0f;
+                        chickFrame++;
+                        if (chickFrame >= chickFramesPerRow) chickFrame = 0;
                     }
-                }
-
-                p.Y += dy;
-                foreach (var s in dolgok)
-                {
-                    if (CheckCollisionRecs(p, s))
-                    {
-                        if (dy > 0) p.Y = s.Y - p.Height;
-                        else if (dy < 0) p.Y = s.Y + s.Height;
-                    }
-                }
-
-                p.X = MathF.Max(roomBounds.X, MathF.Min(p.X, roomBounds.X + roomBounds.Width - p.Width));
-                p.Y = MathF.Max(roomBounds.Y, MathF.Min(p.Y, roomBounds.Y + roomBounds.Height - p.Height));
-
-                playerpos.X = p.X - feetOffsetX;
-                playerpos.Y = p.Y - feetOffsetY;
-
-                walk(ref playerpos.X, ref playerpos.Y, 0f, walking, medium_cat_back, medium_cat_left, medium_cat_right, medium_cat);
-
-                Rectangle interactZone = new Rectangle(p.X - 12, p.Y - 12, p.Width + 24, p.Height + 24);
-
-                //*-------------------------------------------------//
-                // static void itemLetrehozas(string itemname, bool hasitem, bool itempicked, Rectangle interactZone, Rectangle itemrect)
-
-                itemLetrehozas("Picture", ref hasItem1, ref itemPicked1, interactZone, itemRect1, ref messageTime, 2f);
-                itemLetrehozas("Drawing", ref hasItem2, ref itemPicked2, interactZone, itemRect2, ref messageTime, 2f);
-                itemLetrehozas("Key", ref hasItem3, ref itemPicked3, interactZone, itemRect3, ref messageTime, 2f);
-
-                //*-------------------------------------------------//
-                
-                // shoot 
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
-                {
-                    Vector2 start = new Vector2(playerpos.X + medium_cat.Width / 2f, playerpos.Y + medium_cat.Height / 2f);
-                    Vector2 target = mouse;
-
-                    Vector2 dir = target - start;
-                    float dist = dir.Length();
-
-                    if (dist > 1f)
-                    {
-                        dir /= dist;
-
-                        bulletPositions.Add(start);
-                        bulletVelocities.Add(dir * bulletSpeed);
-                        bulletRemaining.Add(dist);
-                    }
-                }
-
-                for (int i = bulletPositions.Count - 1; i >= 0; i--)
-                {
-                    Vector2 step = bulletVelocities[i] * dt;
-                    float stepLen = step.Length();
-
-                    bulletPositions[i] += step;
-                    bulletRemaining[i] -= stepLen;
-
-                    if (bulletRemaining[i] <= 0f)
-                    {
-                        bulletPositions.RemoveAt(i);
-                        bulletVelocities.RemoveAt(i);
-                        bulletRemaining.RemoveAt(i);
-                    }
-                }
-
-                for (int i = 0; i < bulletPositions.Count; i++)
-                {
-                    Raylib.DrawCircleV(bulletPositions[i], 5f, Color.LightGray);
-                }
-
-                // szekreny interaktalas
-
-                Rectangle drawerRect = new Rectangle(460, 125, 336, 138);
-
-                bool nearDrawer = CheckCollisionRecs(interactZone, drawerRect);
-
-                if (nearDrawer && !drawerShow)
-                {
-                    DrawText("Press E", (int)drawerRect.X, (int)drawerRect.Y - 30, 20, Color.White);
-
-                    if (IsKeyPressed(KeyboardKey.E))
-                    {
-                        drawerShow = true;
-                    }
-                }
-
-                if (drawerShow)
-                {
-                    DrawRectangle(0, 0, 1920, 1080, new Color(0, 0, 0, 200)); // dark overlay
-
-                    Rectangle itemRec = new Rectangle(1920 / 2 - drawerImg.Width / 2, 1080 / 2 - drawerImg.Height / 2, drawerImg.Width, drawerImg.Height);
-
-                    // bool mouseOnItem = CheckCollisionPointRec(mouse, itemRec);
-
-                    if (!itemPicked1)
-                    {
-                        DrawTexture(drawerImg, 1920 / 2 - drawerImg.Width / 2, 1080 / 2 - drawerImg.Height / 2, Color.White);
-                        
-                        if (CheckCollisionPointRec(mouse, itemRec) && IsMouseButtonPressed(MouseButton.Left)) {
-                            hasItem1 = true;
-                            itemPicked1 = true;
-
-                            drawerImgShow = false; 
-                        }
-                    } 
-
-                    DrawText("Press X to close", 800, 900, 30, Color.White);
-
-                    if (IsKeyPressed(KeyboardKey.X))
-                    {
-                        drawerShow = false;
-                    }
-                }
-
-                // szinatmenet
-                DrawRectangleGradientH(0, 0, 1920, 1080, new Color(0, 0, 0, 210), new Color(0, 0, 0, 100));
-                //
-
-                // tovabb lepes
-                if (hasItem1 && hasItem2 && hasItem3)
-                {
-                    haseverything = true;
-                    CurrentState = GameState.Gamelvl2;
-                }
                 }
                 else
                 {
-                DrawTexture(lvl1Background, 0, 0, Color.White); 
-                DrawTexture(medium_cat, (int)playerpos.X, (int)playerpos.Y, Color.White); 
-                DrawRectangleGradientH(0, 0, 1920, 1080, new Color(0, 0, 0, 210), new Color(0, 0, 0, 100));
-
-                DrawRectangle(0, 0, 1920, 1080, new Color(0, 0, 0, 180));
-
-                DrawText("PAUSED", 860, 300, 60, Color.White);
-
-                Rectangle resumeBtn = new Rectangle(760, 450, 400, 80);
-                Rectangle menuBtn = new Rectangle(760, 570, 400, 80);
-
-                DrawRectangleRec(resumeBtn, Color.Gray);
-                DrawText("Resume", 900, 475, 30, Color.White);
-
-                DrawRectangleRec(menuBtn, Color.Gray);
-                DrawText("Main Menu", 860, 595, 30, Color.White);
-
-                if (CheckCollisionPointRec(mouse, resumeBtn) && IsMouseButtonPressed(MouseButton.Left))
-                {
-                    pauseMenuOpen = false;
+                    chickFrame = 0;
+                    chickTimer = 0f;
                 }
 
-                if (CheckCollisionPointRec(mouse, menuBtn) && IsMouseButtonPressed(MouseButton.Left))
+                if (p2.Active)
                 {
-                    pauseMenuOpen = false;
-                    CurrentState = GameState.Menu;
-                }
-                }
-            }
-            else if (CurrentState == GameState.Gamelvl2)
-            {
-                DrawText("lvl 2", 960, 200, 200, Color.Black);
+                    Vector2 move2 = Vector2.Zero;
 
-                // karakter mozgasa (your old method still works here, but no collision)
-                walk(ref playerpos.X, ref playerpos.Y, speed * GetFrameTime(), walking, medium_cat_back, medium_cat_left, medium_cat_right, medium_cat);
+                    if (Raylib.IsKeyDown(KeyboardKey.Up)) move2.Y -= 1;
+                    if (Raylib.IsKeyDown(KeyboardKey.Down)) move2.Y += 1;
+                    if (Raylib.IsKeyDown(KeyboardKey.Left)) move2.X -= 1;
+                    if (Raylib.IsKeyDown(KeyboardKey.Right)) move2.X += 1;
 
-                // shoot
-                if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                    if (move2.LengthSquared() > 0) move2 = Vector2.Normalize(move2);
+
+                    p2.Pos += move2 * p2.Speed * dt;
+
+                    // 👇 ADD THIS RIGHT HERE (no new declaration!)
+                    if (move2.X < 0) chickFlip2 = false;
+                    else if (move2.X > 0) chickFlip2 = true;
+
+                    p2.Pos.X = Clamp(p2.Pos.X, 0, screenW - p2.Size.X);
+                    p2.Pos.Y = Clamp(p2.Pos.Y, 0, screenH - p2.Size.Y);
+                }
+
+                foxTimer += dt;
+                if (foxTimer >= foxFrameSpeed)
                 {
-                    Vector2 start = new Vector2(playerpos.X + medium_cat.Width / 2f, playerpos.Y + medium_cat.Height / 2f);
-                    Vector2 target = mouse;
+                    foxTimer = 0f;
+                    foxFrame++;
+                    if (foxFrame >= foxFramesPerRow) foxFrame = 0;
+                }
 
-                    Vector2 dir = target - start;
-                    float dist = dir.Length();
+                for (int i = 0; i < enemyCount; i++)
+                {
+                    if (!enemies[i].Active) continue;
 
-                    if (dist > 1f)
+                    enemies[i].Pos += enemies[i].Vel * dt;
+
+                    if (enemies[i].Pos.X < enemies[i].Radius)
                     {
-                        dir /= dist;
-
-                        bulletPositions.Add(start);
-                        bulletVelocities.Add(dir * bulletSpeed);
-                        bulletRemaining.Add(dist);
+                        enemies[i].Pos.X = enemies[i].Radius;
+                        enemies[i].Vel.X *= -1;
+                    }
+                    if (enemies[i].Pos.X > screenW - enemies[i].Radius)
+                    {
+                        enemies[i].Pos.X = screenW - enemies[i].Radius;
+                        enemies[i].Vel.X *= -1;
+                    }
+                    if (enemies[i].Pos.Y < enemies[i].Radius)
+                    {
+                        enemies[i].Pos.Y = enemies[i].Radius;
+                        enemies[i].Vel.Y *= -1;
+                    }
+                    if (enemies[i].Pos.Y > screenH - enemies[i].Radius)
+                    {
+                        enemies[i].Pos.Y = screenH - enemies[i].Radius;
+                        enemies[i].Vel.Y *= -1;
                     }
                 }
 
-                float dt = Raylib.GetFrameTime();
+                if (hitCooldown1 > 0) hitCooldown1 -= dt;
+                if (hitCooldown2 > 0) hitCooldown2 -= dt;
 
-                for (int i = bulletPositions.Count - 1; i >= 0; i--)
+                Rectangle r1 = new Rectangle(0, 0, 0, 0);
+                Rectangle r2 = new Rectangle(0, 0, 0, 0);
+
+                if (p1.Active) r1 = PlayerRect(p1);
+                if (p2.Active) r2 = PlayerRect(p2);
+
+                for (int i = 0; i < coinCount; i++)
                 {
-                    Vector2 step = bulletVelocities[i] * dt;
-                    float stepLen = step.Length();
+                    if (!coins[i].Active) continue;
 
-                    bulletPositions[i] += step;
-                    bulletRemaining[i] -= stepLen;
+                    Vector2 c = coins[i].Pos;
+                    float rad = coins[i].Radius;
 
-                    if (bulletRemaining[i] <= 0f)
+                    bool p1Hit = p1.Active && Raylib.CheckCollisionCircleRec(c, rad, r1);
+                    bool p2Hit = p2.Active && Raylib.CheckCollisionCircleRec(c, rad, r2);
+
+                    if (p1Hit || p2Hit)
                     {
-                        bulletPositions.RemoveAt(i);
-                        bulletVelocities.RemoveAt(i);
-                        bulletRemaining.RemoveAt(i);
+                        coins[i].Active = false;
+                        if (p1Hit) p1.Score++;
+                        if (p2Hit) p2.Score++;
                     }
                 }
 
-                for (int i = 0; i < bulletPositions.Count; i++)
+                for (int i = 0; i < enemyCount; i++)
                 {
-                    Raylib.DrawCircleV(bulletPositions[i], 5f, Color.Red);
-                }
+                    if (!enemies[i].Active) continue;
 
-                // enemies
-                float enemySpeed = 130f;
+                    Vector2 e = enemies[i].Pos;
+                    float rad = enemies[i].Radius;
 
-                Vector2 playerCenter = new Vector2(playerpos.X + medium_cat.Width / 2f, playerpos.Y + medium_cat.Height / 2f);
+                    bool p1Hit = p1.Active && Raylib.CheckCollisionCircleRec(e, rad, r1);
+                    bool p2Hit = p2.Active && Raylib.CheckCollisionCircleRec(e, rad, r2);
 
-                for (int i = 0; i < enemyPositions.Count; i++)
-                {
-                    Vector2 dir = playerCenter - enemyPositions[i];
-                    float dist = dir.Length();
-
-                    if (dist > 0.001f)
+                    if (p1Hit && hitCooldown1 <= 0f && p1.Active)
                     {
-                        dir /= dist;
-                        enemyPositions[i] += dir * enemySpeed * dt;
+                        p1.Lives--;
+                        hitCooldown1 = 0.6f;
+
+                        if (p1.Lives <= 0)
+                            p1.Active = false;
+                    }
+
+                    if (p2Hit && hitCooldown2 <= 0f && p2.Active)
+                    {
+                        p2.Lives--;
+                        hitCooldown2 = 0.6f;
+
+                        if (p2.Lives <= 0)
+                            p2.Active = false;
                     }
                 }
 
-                float bulletRadius = 5f;
+                int totalScore = p1.Score + (p2.Active ? p2.Score : 0);
 
-                for (int b = bulletPositions.Count - 1; b >= 0; b--)
+                if (!twoPlayers)
                 {
-                    for (int e = enemyPositions.Count - 1; e >= 0; e--)
-                    {
-                        float hitDist = Vector2.Distance(bulletPositions[b], enemyPositions[e]);
+                    if (!p1.Active) state = GameState.GameOver;
+                }
+                else
+                {
+                    if (!p1.Active && !p2.Active) state = GameState.GameOver;
+                }
 
-                        if (hitDist <= bulletRadius + enemyRadii[e])
+                if (state == GameState.Play)
+                {
+                    bool allCoinsCollected = true;
+
+                    for (int i = 0; i < coinCount; i++)
+                    {
+                        if (coins[i].Active)
                         {
-                            enemyHP[e] -= 1;
-
-                            bulletPositions.RemoveAt(b);
-                            bulletVelocities.RemoveAt(b);
-                            bulletRemaining.RemoveAt(b);
-
-                            if (enemyHP[e] <= 0)
-                            {
-                                enemyPositions.RemoveAt(e);
-                                enemyRadii.RemoveAt(e);
-                                enemyHP.RemoveAt(e);
-                            }
-
+                            allCoinsCollected = false;
                             break;
                         }
                     }
+
+                    if (allCoinsCollected)
+                    {
+                        if (level >= maxLevel) state = GameState.Win;
+                        else NextLevel();
+                    }
                 }
 
-                for (int i = 0; i < enemyPositions.Count; i++)
+                if (Raylib.IsKeyPressed(KeyboardKey.Escape))
                 {
-                    Raylib.DrawCircleV(enemyPositions[i], enemyRadii[i], Color.Green);
+                    state = GameState.Menu;
                 }
+            }
+            else
+            {
+                if (Raylib.IsKeyPressed(KeyboardKey.R))
+                {
+                    StartNewGame();
+                }
+                if (Raylib.IsKeyPressed(KeyboardKey.M))
+                {
+                    state = GameState.Menu;
+                }
+            }
+
+            Raylib.BeginDrawing();
+
+            if (state == GameState.Play)
+            {
+                DrawTileBackground(tileset, map, tileSize);
+            }
+            else
+            {
+                Raylib.ClearBackground(Color.DarkBlue);
+            }
+
+            if (state == GameState.Menu)
+            {
+                Raylib.DrawText("press 1 - One Player", 410, 240, 22, Color.RayWhite);
+                Raylib.DrawText("press 2 - Two Players", 410, 280, 22, Color.RayWhite);
+                Raylib.DrawText("Controls:", 430, 350, 20, Color.RayWhite);
+                Raylib.DrawText("P1: W A S D", 410, 380, 20, Color.RayWhite);
+                Raylib.DrawText("P2: Arrow Keys", 410, 410, 20, Color.RayWhite);
+            }
+            else if (state == GameState.Play)
+            {
+                Raylib.DrawRectangleLines(20, 20, screenW - 40, screenH - 40, Color.SkyBlue);
+
+                for (int i = 0; i < coinCount; i++)
+                {
+                    if (!coins[i].Active) continue;
+                    Raylib.DrawCircleV(coins[i].Pos, coins[i].Radius, Color.Gold);
+                    Raylib.DrawCircleLines((int)coins[i].Pos.X, (int)coins[i].Pos.Y, coins[i].Radius, Color.RayWhite);
+                }
+
+                for (int i = 0; i < enemyCount; i++)
+                {
+                    if (!enemies[i].Active) continue;
+
+                    bool flip = enemies[i].Vel.X > 0;
+
+                    Rectangle srcFox = new Rectangle(foxFrame * foxFrameW, foxWalkRow * foxFrameH, foxFrameW, foxFrameH);
+                    if (flip)
+                    {
+                        srcFox.X += foxFrameW;
+                        srcFox.Width = -foxFrameW;
+                    }
+
+                    float w = foxFrameW * foxScale;
+                    float h = foxFrameH * foxScale;
+
+                    Rectangle dstFox = new Rectangle(
+                        enemies[i].Pos.X - w / 2f,
+                        enemies[i].Pos.Y - h / 2f,
+                        w,
+                        h
+                    );
+
+                    Raylib.DrawTexturePro(foxSheet, srcFox, dstFox, new Vector2(0, 0), 0f, Color.White);
+                }
+
+                Rectangle srcChick1 = new Rectangle(chickFrame * chickFrameW, chickWalkRow * chickFrameH, chickFrameW, chickFrameH);
+                if (chickFlip1)
+                {
+                    srcChick1.X += chickFrameW;
+                    srcChick1.Width = -chickFrameW;
+                }
+
+                Rectangle srcChick2 = new Rectangle(chickFrame * chickFrameW, chickWalkRow * chickFrameH, chickFrameW, chickFrameH);
+                if (chickFlip2)
+                {
+                    srcChick2.X += chickFrameW;
+                    srcChick2.Width = -chickFrameW;
+                }
+
+                if (p1.Active)
+                {
+                    Rectangle dstChick = new Rectangle(p1.Pos.X, p1.Pos.Y, p1.Size.X, p1.Size.Y);
+                    Raylib.DrawTexturePro(chickSheet, srcChick1, dstChick, new Vector2(0, 0), 0f, Color.White);
+                }
+
+                if (p2.Active)
+                {
+                    Rectangle dstChick = new Rectangle(p2.Pos.X, p2.Pos.Y, p2.Size.X, p2.Size.Y);
+                    Raylib.DrawTexturePro(chickSheet, srcChick2, dstChick, new Vector2(0, 0), 0f, Color.White);
+                }
+
+                int totalScore = p1.Score + (p2.Active ? p2.Score : 0);
+                string t = $"Level: {level}/{maxLevel}   Target: {coinsToWin}   Total: {totalScore}   Time: {playTime:0.0}s";
+                Raylib.DrawText(t, 30, 30, 20, Color.RayWhite);
+
+                string hud1 = $"P1 Lives: {p1.Lives}  Score: {p1.Score}";
+                Raylib.DrawText(hud1, 30, 60, 20, Color.SkyBlue);
+
+                if (p2.Active)
+                {
+                    string hud2 = $"P2 Lives: {p2.Lives}  Score: {p2.Score}";
+                    Raylib.DrawText(hud2, 30, 85, 20, Color.Orange);
+                }
+
+                Raylib.DrawText("ESC: Menu", screenW - 150, 30, 18, Color.LightGray);
+            }
+            else if (state == GameState.GameOver)
+            {
+                Raylib.DrawText("GAME OVER", 380, 150, 52, Color.RayWhite);
+
+                int totalScore = p1.Score + (p2.Active ? p2.Score : 0);
+                Raylib.DrawText($"Reached level: {level}", 410, 240, 22, Color.LightGray);
+                Raylib.DrawText($"Total score: {totalScore}", 410, 270, 22, Color.LightGray);
+                Raylib.DrawText($"Time: {playTime:0.0}s", 410, 300, 22, Color.LightGray);
+
+                if (p2.Active)
+                {
+                    string winner;
+                    if (p1.Score > p2.Score) winner = "Winner: Player 1";
+                    else if (p2.Score > p1.Score) winner = "Winner: Player 2";
+                    else winner = "Draw!";
+                    Raylib.DrawText(winner, 420, 350, 26, Color.Gold);
+                }
+
+                Raylib.DrawText("R - Restart   M - Menu", 365, 450, 24, Color.RayWhite);
+            }
+            else if (state == GameState.Win)
+            {
+                Raylib.DrawText("YOU WIN!", 410, 150, 52, Color.RayWhite);
+
+                int totalScore = p1.Score + (p2.Active ? p2.Score : 0);
+                Raylib.DrawText($"Finished level: {level}/{maxLevel}", 375, 240, 22, Color.LightGray);
+                Raylib.DrawText($"Total score: {totalScore}", 410, 270, 22, Color.LightGray);
+                Raylib.DrawText($"Time: {playTime:0.0}s", 410, 300, 22, Color.LightGray);
+
+                if (p2.Active)
+                {
+                    string winner;
+                    if (p1.Score > p2.Score) winner = "Winner: Player 1";
+                    else if (p2.Score > p1.Score) winner = "Winner: Player 2";
+                    else winner = "Draw!";
+                    Raylib.DrawText(winner, 420, 350, 26, Color.Gold);
+                }
+
+                Raylib.DrawText("R - Restart   M - Menu", 365, 450, 24, Color.RayWhite);
             }
 
             Raylib.EndDrawing();
         }
 
+        Raylib.UnloadTexture(tileset);
+        Raylib.UnloadTexture(foxSheet);
+        Raylib.UnloadTexture(chickSheet);
         Raylib.CloseWindow();
     }
 }
